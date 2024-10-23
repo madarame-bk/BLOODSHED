@@ -7,7 +7,6 @@ pygame.init()
 
 WIDTH = 800
 HEIGHT = 600
-lol = "lol"
 
 sc = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("THERE WILL BE BLOODSHED")
@@ -84,7 +83,7 @@ class colors:
     METEORITE = (169,169,169)
 
 class Organism:
-    def __init__(self, x, y, speed, size, lifespan):
+    def __init__(self, x, y, speed=2, size=5, lifespan=100, age_factor=1, energy_cost=0.1, color=colors.BLACK):
         self.x = x
         self.y = y
         self.position = (x,y)
@@ -92,11 +91,11 @@ class Organism:
         self.size = size
         self.lifespan = lifespan
         self.age = 0
-        self.age_factor = 1
+        self.age_factor = age_factor
         self.energy = 100
-        self.energy_cost = 0.1
+        self.energy_cost = energy_cost
         self.direction = random.uniform(0, 2* math.pi)
-        self.color = colors.BLACK
+        self.color = color
 
     def move(self):
         #random.uniform vrati random CISLO ne integer v rozsahu
@@ -114,8 +113,14 @@ class Organism:
         self.y += ay
 
         #zajistí, že nevyjede mimo screen
-        self.x = max(0, min(WIDTH, self.x))
-        self.y = max(0, min(HEIGHT, self.y))
+        """self.x = max(0, min(WIDTH, self.x))
+        self.y = max(0, min(HEIGHT, self.y))"""
+        if self.x > WIDTH or self.x < 0:
+            self.direction = math.pi - self.direction
+        if self.y > HEIGHT or self.y < 0:
+            self.direction = -self.direction
+
+
 
         self.energy -= self.energy_cost
 
@@ -154,6 +159,14 @@ class World:
         for danger in range(danger_count):
             self.danger_locations.append((random.randint(0, WIDTH), random.randint(0, HEIGHT)))
 
+    def add_food(self, x=None, y=None):
+        if x is None:
+            x = random.randint(0, WIDTH)
+        if y is None:
+            y = random.randint(0, HEIGHT)
+        self.food_locations.append((x, y))
+        #print(f"Jidlo pridano na pozici {x}, {y}")
+
     def draw(self, screen):
         for food_location in self.food_locations:
             pygame.draw.circle(screen, colors.ORANGE, food_location, 5)
@@ -162,21 +175,80 @@ class World:
             pygame.draw.circle(screen, colors.DARK_RED, danger_location, 5)
 
 
+#functions other
 def check_collision_food(organism, env):
     for food in env.food_locations:
+        #vzdalenost, nevim
         distance = math.sqrt((organism.x - food[0])**2 + (organism.y - food[1])**2)
         if distance < 10:
-            organism.energy += 25
+            organism.energy +=25
             env.food_locations.remove(food)
+            #print(f"{organism.name} snedl jidlo!!")
+            
+def check_collision_danger(organism, env):
+    for danger in env.danger_locations:
+        distance = math.sqrt((organism.x - danger[0])**2 + (organism.y - danger[1])**2)
+        if distance < 10:
+            organism.energy -= 25
+            #print(f"{organism.name} slapl na hrebik!")
+
+def check_for_reproduction(organism, population):
+    if organism.energy >= 150:
+        organism.energy -= 60
+        
+        # Inherit the parent organism's attributes
+        new_speed = organism.speed
+        new_size = organism.size
+        new_lifespan = organism.lifespan
+        new_age_factor = organism.age_factor
+        new_energy_cost = organism.energy_cost
+        new_color = organism.color
+
+        mutation = ""
+        
+        # Randomly mutate one of the attributes
+        mutation = random.randint(1, 5)
+        if mutation == 1:
+            new_speed += new_speed / 4  
+            mutation = "speed"
+        elif mutation == 2:
+            new_size += new_size / 4  
+            mutation = "size"
+        elif mutation == 3:
+            new_lifespan += new_lifespan / 4  
+            mutation = "lifespan"
+        elif mutation == 4:
+            new_age_factor += new_age_factor / 4 
+            mutation = "age factor"
+        elif mutation == 5:
+            new_energy_cost += new_energy_cost / 4 
+            mutation = "energy cost" 
+        
+        # Add evolved offspring to pupulation
+        population.append(type(organism)(
+            organism.x, organism.y, 
+            speed=new_speed, 
+            size=new_size, 
+            lifespan=new_lifespan, 
+            age_factor=new_age_factor, 
+            energy_cost=new_energy_cost, 
+            color=new_color
+        ))
+        #print(f"{organism.name} se rozmnozil s {mutation}!")
+        
+    
+    
 
 env=World(food_count=30, danger_count=5)
 population = []
 
 class Lizard(Organism):
-    def __init__(self, x, y):
-        super().__init__(x,y, speed=random.uniform(2,4), size=4, lifespan = 100)
+    def __init__(self, x, y, speed=random.uniform(2,4), size=4, lifespan=100, age_factor=1, energy_cost=0.1, color=colors.DARK_GREEN):
+        super().__init__(x,y, speed, size, lifespan, age_factor, energy_cost, color)
+        self.name="Lizard"
         self.direction=random.uniform(0,2*math.pi)
         self.color = colors.DARK_GREEN
+        
     def update(self):
         self.x += math.cos(self.direction) * self.speed
         self.y += math.sin(self.direction) * self.speed
@@ -185,9 +257,9 @@ class Lizard(Organism):
 
 
 class Dinosaur(Organism):
-    def __init__(self, x, y):
-        super().__init__(x,y, speed=random.uniform(2,4), size=8, lifespan=100)
-        self.energy_cost = 0.15
+    def __init__(self, x, y, speed=random.uniform(1,3), size=8, lifespan=100, age_factor=1, energy_cost=0.15, color=colors.DARK_BLUE):
+        super().__init__(x,y, speed, size, lifespan, age_factor, energy_cost, color)
+        self.name="Dinosaur"
         self.color = colors.DARK_BLUE
     
     
@@ -197,12 +269,12 @@ class Dinosaur(Organism):
             if f is not None:
                 angle = math.atan2(f[1] - self.y, f[0] - self.x)
                 self.direction = angle
- 
+
 
 #main
 
 pygame.font.init()
-font = pygame.font.SysFont("Arial", 30)  # Choose a font and size
+font = pygame.font.SysFont("Arial", 30)  # Choose font
 
 
 for i in range(5):
@@ -210,8 +282,26 @@ for i in range(5):
     population.append(Lizard(random.randint(0, WIDTH), random.randint(0,HEIGHT)))
 
 start_time = time.time()
-last_time = start_time
+last_time = 0
 time_interval = 5
+
+simulation_time = 0
+
+
+speed_multiplier = 1  # Normal speed
+fast_speed_multiplier = 10  # Fast speed (you can adjust this)
+is_fast = False  # Toggle flag
+
+def toggle_speed():
+    print("toggled")
+    global is_fast, speed_multiplier
+    if is_fast:
+        speed_multiplier = 1  # Set back to normal speed
+        is_fast = False
+    else:
+        speed_multiplier = fast_speed_multiplier  # Set to fast speed
+        is_fast = True
+
 
 running = True
 clock = pygame.time.Clock()
@@ -223,15 +313,26 @@ while running:
     #vytvori prostredi (jidlo, nebezpeci)
     env.draw(sc)
 
+    delta_time = clock.get_time()/1000 #/1000 protoze get time vrati cas od zacatku sim v milisekundach
+    simulation_time += delta_time * speed_multiplier
+
+
     #hodiny
-    time_surface = font.render(f"{int(time.time()-start_time)}", True, colors.GREEN)  # Create a surface with the time
+    time_surface = font.render(f"{int(simulation_time)}", True, colors.GREEN)  # Create a surface with the time
     sc.blit(time_surface, (10, 10))  # Draw the text at position (10, 10)
 
+    fps = font.render(f"fps:{int(clock.get_fps())}", True, colors.GREEN)  # Create a surface with the time
+    sc.blit(fps, (100, 100))  # Draw the text at position (10, 10)
+
+    current_time=pygame.time.get_ticks()
     for organism in population:
         if organism.is_alive():
-            if time.time() - last_time > time_interval:
+            if simulation_time - last_time > time_interval: #na milisekundy *1000
+                print(f"cas mezi: {simulation_time - last_time}")
                 organism.age += organism.age_factor
-                last_time = time.time()
+                for i in range(10):
+                    env.add_food()
+                last_time = simulation_time
 
             if isinstance(organism, Dinosaur):
                 organism.update(env.food_locations)
@@ -240,20 +341,26 @@ while running:
             organism.move()
             organism.draw(sc)
             check_collision_food(organism, env)
+            check_collision_danger(organism, env)
+            check_for_reproduction(organism, population)
 
     pygame.display.flip()
 
-    clock.tick(30)
+    clock.tick(30 * speed_multiplier)
+
+
 
     #zavreni okna
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                toggle_speed()
 
 
 pygame.quit()
     
-
 
 
 
