@@ -97,16 +97,16 @@ class Organism:
         self.direction = random.uniform(0, 2* math.pi)
         self.color = color
 
-    def move(self):
+    def move(self, delta_time=1, speed_multiplier=1):
         #random.uniform vrati random CISLO ne integer v rozsahu
         #toto efektivne vraci uhel v radianech
         
 
         #cos pro dany uhel urcuje pohyb horizontalne
-        ax = math.cos(self.direction) * self.speed
+        ax = math.cos(self.direction) * self.speed*delta_time*speed_multiplier
         #sin vertikalne 
         #0 -> nehybe se, 1 nebo -1 hybe se v pravem uhlu
-        ay = math.sin(self.direction) * self.speed
+        ay = math.sin(self.direction) * self.speed*delta_time*speed_multiplier
 
         #
         self.x += ax
@@ -122,7 +122,7 @@ class Organism:
 
 
 
-        self.energy -= self.energy_cost
+        self.energy -= self.energy_cost*delta_time*speed_multiplier
 
         self.position=(self.x,self.y)
 
@@ -243,28 +243,28 @@ env=World(food_count=30, danger_count=5)
 population = []
 
 class Lizard(Organism):
-    def __init__(self, x, y, speed=random.uniform(2,4), size=4, lifespan=100, age_factor=1, energy_cost=0.1, color=colors.DARK_GREEN):
+    def __init__(self, x, y, speed=random.uniform(15,20), size=4, lifespan=100, age_factor=1, energy_cost=0.1, color=colors.DARK_GREEN):
         super().__init__(x,y, speed, size, lifespan, age_factor, energy_cost, color)
         self.name="Lizard"
         self.direction=random.uniform(0,2*math.pi)
         self.color = colors.DARK_GREEN
         
     def update(self):
-        self.x += math.cos(self.direction) * self.speed
-        self.y += math.sin(self.direction) * self.speed
-        if random.random() < 0.05:
+        self.x += math.cos(self.direction) * self.speed*delta_time*speed_multiplier
+        self.y += math.sin(self.direction) * self.speed*delta_time*speed_multiplier
+        if random.random() < 0.05*speed_multiplier:
             self.direction=random.uniform(0,2*math.pi)
 
 
 class Dinosaur(Organism):
-    def __init__(self, x, y, speed=random.uniform(1,3), size=8, lifespan=100, age_factor=1, energy_cost=0.15, color=colors.DARK_BLUE):
+    def __init__(self, x, y, speed=random.uniform(10,15), size=8, lifespan=100, age_factor=1, energy_cost=0.15, color=colors.DARK_BLUE):
         super().__init__(x,y, speed, size, lifespan, age_factor, energy_cost, color)
         self.name="Dinosaur"
         self.color = colors.DARK_BLUE
     
     
     def update(self, objects):
-        if random.random() < 0.01:
+        if random.random() < 0.01*speed_multiplier:
             f = self.find_nearest_object(objects)
             if f is not None:
                 angle = math.atan2(f[1] - self.y, f[0] - self.x)
@@ -338,7 +338,7 @@ while running:
                 organism.update(env.food_locations)
             else:
                 organism.update()
-            organism.move()
+            organism.move(delta_time=delta_time, speed_multiplier=speed_multiplier)
             organism.draw(sc)
             check_collision_food(organism, env)
             check_collision_danger(organism, env)
@@ -346,7 +346,7 @@ while running:
 
     pygame.display.flip()
 
-    clock.tick(30 * speed_multiplier)
+    clock.tick(30)
 
 
 
