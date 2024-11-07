@@ -9,7 +9,7 @@ def check_collision_food(organism, env):
     for food in env.food_locations:
         #vzdalenost, nevim
         distance = math.sqrt((organism.x - food[0])**2 + (organism.y - food[1])**2)
-        if distance < 10:
+        if distance < organism.size:
             organism.energy +=25
             env.food_locations.remove(food)
             #print(f"{organism.name} snedl jidlo!!")
@@ -17,7 +17,7 @@ def check_collision_food(organism, env):
 def check_collision_danger(organism, env):
     for danger in env.danger_locations:
         distance = math.sqrt((organism.x - danger[0])**2 + (organism.y - danger[1])**2)
-        if distance < 10:
+        if distance < organism.size:
             organism.energy -= 25
             #print(f"{organism.name} slapl na hrebik!")
 

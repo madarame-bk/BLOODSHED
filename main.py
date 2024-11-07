@@ -103,7 +103,7 @@ while running:
     #UI
 
     print(f"organismu: {len(population)}")
-
+ 
     font= pygame.font.SysFont("Arial", 30)
 
     #hodiny
