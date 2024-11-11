@@ -41,6 +41,11 @@ speed_multiplier = 1  # Normal speed
 fast_speed_multiplier = 500  # Fast speed (you can adjust this)
 is_fast = False  # Toggle flag
 
+BASE_SPEED_FACTOR=1000
+speed_factor= 1
+
+
+
 def toggle_speed():
     print("toggled")
     global is_fast, speed_multiplier
@@ -65,49 +70,51 @@ while running:
     env.draw(sc)
 
     delta_time = clock.get_time()/1000 #/1000 protoze get time vrati cas od zacatku sim v milisekundach
-    simulation_time += delta_time * speed_multiplier
+    simulation_time += delta_time * speed_factor
 
     
 
     
 
     current_time=pygame.time.get_ticks()
-    for organism in population:
-        if organism.is_alive():
-            if simulation_time - last_time > time_interval: #na milisekundy *1000
-                #print(f"cas mezi: {simulation_time - last_time}")
-                organism.age += organism.age_factor *delta_time*speed_multiplier
-                for i in range(5):
-                    env.add_food()
-                last_time = simulation_time
+    for _ in range(speed_factor):
+        for organism in population:
+            if organism.is_alive():
+                if simulation_time - last_time > time_interval: #na milisekundy *1000
+                    #print(f"cas mezi: {simulation_time - last_time}")
+                    organism.age += organism.age_factor *delta_time*speed_multiplier
+                    for i in range(5):
+                        env.add_food()
+                        print("pridano jidlo")
+                    last_time = simulation_time
 
-            if isinstance(organism, Dinosaur):
-                organism.update(env.food_locations, delta_time=delta_time, speed_multiplier=speed_multiplier)
+                if isinstance(organism, Dinosaur):
+                    organism.update(env.food_locations, delta_time=delta_time)
+                else:
+                    organism.update(delta_time=delta_time)
+                organism.move(delta_time=delta_time)
+                organism.draw(sc)
+                check_collision_food(organism, env)
+                check_collision_danger(organism, env)
+                check_for_reproduction(organism, population)
+                if organism.position[0] < -5 or organism.position[0] > WIDTH+5 or organism.position[1] < -5 or organism.position[1] > HEIGHT+5:
+                    offscreen.append(organism)
+                if organism in offscreen:
+                    if organism.position[0] > -5 or organism.position[0] < WIDTH+5 or organism.position[1] > -5 or organism.position[1] < HEIGHT+5:
+                        offscreen.remove(organism)
+
             else:
-                organism.update(delta_time=delta_time, speed_multiplier=speed_multiplier)
-            organism.move(delta_time=delta_time, speed_multiplier=speed_multiplier)
-            organism.draw(sc)
-            check_collision_food(organism, env)
-            check_collision_danger(organism, env)
-            check_for_reproduction(organism, population)
-            if organism.position[0] < -5 or organism.position[0] > WIDTH+5 or organism.position[1] < -5 or organism.position[1] > HEIGHT+5:
-                offscreen.append(organism)
-            if organism in offscreen:
-                if organism.position[0] > -5 or organism.position[0] < WIDTH+5 or organism.position[1] > -5 or organism.position[1] < HEIGHT+5:
-                    offscreen.remove(organism)
-
-        else:
-            population.remove(organism)
-            print(f"Organism {organism.name} died at age {organism.age}")
+                population.remove(organism)
+                print(f"Organism {organism.name} died at age {organism.age}")
 
     #UI
 
-    print(f"organismu: {len(population)}")
+    #print(f"organismu: {len(population)}")
  
     font= pygame.font.SysFont("Arial", 30)
 
     #hodiny
-    if speed_multiplier == 1:
+    if speed_factor == 1:
         time_text = font.render(f"Čas: {format_second(int(simulation_time))}", True, colors.GREEN)  # Create a surface with the time
         sc.blit(time_text, (10, 10))  # Draw the text at position (10, 10)
     else:
@@ -152,7 +159,7 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                toggle_speed()
+                speed_factor=1 if speed_factor !=1 else BASE_SPEED_FACTOR
 
 
 pygame.quit()

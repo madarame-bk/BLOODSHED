@@ -82,10 +82,10 @@ class Lizard(Organism):
         self.direction=random.uniform(0,2*math.pi)
         self.color = colors.DARK_GREEN
         
-    def update(self, delta_time, speed_multiplier):
-        self.x += math.cos(self.direction) * self.speed*delta_time*speed_multiplier
-        self.y += math.sin(self.direction) * self.speed*delta_time*speed_multiplier
-        if random.random() < 0.05*speed_multiplier:
+    def update(self, delta_time, ):
+        self.x += math.cos(self.direction) * self.speed*delta_time
+        self.y += math.sin(self.direction) * self.speed*delta_time
+        if random.random() < 0.05:
             self.direction=random.uniform(0,2*math.pi)
 
 
@@ -96,8 +96,8 @@ class Dinosaur(Organism):
         self.color = colors.DARK_BLUE
     
     
-    def update(self, objects, delta_time, speed_multiplier):
-        if random.random() < 0.01*speed_multiplier:
+    def update(self, objects, delta_time):
+        if random.random() < 0.01:
             f = self.find_nearest_object(objects)
             if f is not None:
                 angle = math.atan2(f[1] - self.y, f[0] - self.x)
